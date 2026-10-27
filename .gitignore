@@ -1,0 +1,9 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.xlsx
+*.csv
+*.json
+*.log
+.env

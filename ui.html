@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Keepa screener</title>
+<style>
+:root{--bg:#101010;--panel:#171717;--side:#141414;--ink:#EDEDED;--mute:#8F8F8F;--line:#262626;--sel:#262626;--hover:#1E1E1E;--stop:#F0654F;--ok:#4CC38A;--accent:#6B6BF0;
+--face:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html{background:var(--bg);color:var(--ink);font:14px/1.45 var(--face);font-variant-numeric:tabular-nums}
+body{margin:0;display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+a{color:inherit}
+.side{background:var(--side);padding:14px 10px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line);position:sticky;top:0;height:100vh}
+.side a{padding:7px 10px;border-radius:8px;color:var(--mute);text-decoration:none}
+.side a:hover{background:var(--hover);color:var(--ink)}.side a.on{background:var(--sel);color:var(--ink)}
+.side .brand{font-size:15px;font-weight:600;margin:0 0 14px;color:var(--ink)}
+main{padding:0 40px 60px;min-width:0}
+.head{display:flex;align-items:center;gap:14px;padding:22px 0 14px;flex-wrap:wrap}
+.head h1{margin:0;font-size:20px;font-weight:600}.head p{margin:0;flex:1;min-width:220px}
+.head>:last-child{margin-left:auto}
+.sticky{position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:1px solid var(--line)}
+#msg.bad{color:var(--stop);font-weight:600}
+.btn{font:inherit;font-weight:500;background:#EDEDED;color:#101010;border:0;border-radius:8px;padding:7px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{background:#fff}.btn.ghost{background:var(--panel);color:var(--ink);border:1px solid var(--line)}.btn.ghost:hover{background:var(--sel)}
+.btn:disabled{opacity:.55;cursor:wait}.btn.small{padding:3px 10px;font-size:13px}
+:focus-visible,label.btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+section{display:grid;grid-template-columns:150px minmax(0,1fr);gap:0 24px;padding:22px 0;border-top:1px solid var(--line);max-width:980px}
+section>h2{margin:0;font-size:14px;font-weight:600}section>*:not(h2){grid-column:2}
+input,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+input[type=number]{width:6em}
+label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px 18px;margin-top:14px}
+.grid select,.grid input{width:100%;font-size:14px}.wide{grid-column:1/-1}.inline{display:flex;gap:8px}
+.row{display:flex;gap:14px;align-items:center}.muted{color:var(--mute)}
+label.chk{flex-direction:row;align-items:center;gap:9px;font-size:14px;color:var(--ink);padding:5px 0}
+.rule{display:flex;gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+.rule p{margin:0}.rule>input{accent-color:var(--ink);width:17px;height:17px;transform:translateY(3px)}
+.rule.off p{color:var(--mute)}
+.scroll{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;font-size:13px;white-space:nowrap;color:var(--mute);background:var(--panel)}.num{text-align:right;white-space:nowrap}
+.peek td,.peek th{font-size:12px;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.list td{padding:11px 10px}.list .acts{white-space:nowrap;text-align:right}.list .acts>*{margin-left:10px}
+.st.running{font-weight:700}.st.paused{font-weight:700;color:#E8B04B}.st.error,.st.interrupted{color:var(--stop)}
+@keyframes fresh{from{background:#1F2A22}to{background:transparent}}tr.fresh td{animation:fresh 2.5s ease-out}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}.live i{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:blink 1.4s infinite}
+.live.paused i{background:#E8B04B;animation:none}@keyframes blink{50%{opacity:.25}}
+.btn.warnbtn{background:#E8B04B;color:#101010}.btn.warnbtn:hover{background:#F2C46A}
+h1 .st{font-size:14px;font-weight:500;margin-left:8px;color:var(--mute)}
+.empty{padding:40px 0;max-width:46ch}
+.meter{height:2px;background:var(--line)}#bar{height:100%;width:0;background:var(--ink);transition:width .6s}
+.pace{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:8px 0 18px;color:var(--mute);font-size:14px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);flex-wrap:wrap;padding-bottom:6px}
+.tabs button{font:inherit;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--mute);border-radius:8px}
+.tabs button.on{background:var(--sel);color:var(--ink);font-weight:500}.tabs b{margin-left:5px}
+.legend{font-size:13px;color:var(--mute);display:flex;gap:12px;align-items:center;margin:12px 0}
+.code{display:inline-flex;gap:2px;align-items:flex-end;height:20px}
+.code i{display:block;width:4px;height:100%}
+.code .p{background:var(--ink)}.code .f{background:var(--stop);height:35%}.code .n{width:1px;margin:0 1.5px;background:#3A3A3A}
+.res th{cursor:pointer;position:sticky;top:0}
+.prod{min-width:260px;max-width:520px}.prod .id{font-weight:700;margin-right:6px}
+.prod small{display:block;font-size:12px}.why{color:var(--stop)}.warn{color:var(--mute)}
+tr.fail td,tr.other td{color:var(--mute)}
+tr.pass .id a,tr.pass td:last-child{color:var(--ok)}tr.pass .id a{text-decoration:none}
+tbody tr:hover td{background:#141414}
+details{margin-top:24px}pre{font:12px/1.5 Consolas,monospace;white-space:pre-wrap;color:var(--mute)}
+@media(max-width:760px){body{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;align-items:center;gap:12px}
+.side .brand{margin:0 8px 0 0}main{padding:0 16px 40px}section{grid-template-columns:1fr}section>*:not(h2){grid-column:1}section>h2{margin-bottom:8px}}
+@media(prefers-reduced-motion:reduce){#bar{transition:none}}
+.pre{border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0;font-size:14px}.pre h2{font-size:14px;margin:0 0 8px}.pre ul{margin:0 0 8px;padding-left:20px}.pre li b{font-variant-numeric:tabular-nums}.pre .warn{color:var(--stop);font-weight:600}.pre .eta{color:var(--mute);margin:8px 0 0}
+.why{display:flex;flex-direction:column;gap:4px;margin:12px 0;font-size:13px}.why h2{font-size:13px;margin:0;color:var(--mute);font-weight:500;display:flex;gap:12px;align-items:center}.why button.line{font:inherit;display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;background:none;border:0;padding:3px 6px;cursor:pointer;text-align:left;color:var(--ink);border-radius:6px}.why button.line:hover,.why button.line.on{background:var(--sel)}.why .track{height:8px;background:var(--line);border-radius:4px;overflow:hidden}.why .track i{display:block;height:100%;background:var(--stop)}.why .n{color:var(--mute);text-align:right;font-variant-numeric:tabular-nums}.why .clear{font:inherit;font-size:12px;background:none;border:0;color:var(--mute);text-decoration:underline;cursor:pointer;padding:0}
+</style></head>
+<body>
+<nav class="side"><a class="brand" href="#/">Screener</a><a href="#/" id="nav-runs">Runs</a><a href="#/new" id="nav-new">New screening</a></nav>
+<main id="main"></main>
+<script>
+const $ = s => document.querySelector(s), main = $('#main');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const num = (v, d = 0) => v == null || v === '' ? '' : Number(v).toLocaleString(undefined, {minimumFractionDigits: d, maximumFractionDigits: d});
+const wait = m => m < 1 ? 'under a minute' : m < 120 ? `about ${Math.round(m)} min` : `about ${(m / 60).toFixed(1)} h`;
+
+async function api(url, body, opts = {}) {
+  const init = {};
+  if (body !== undefined) {
+    init.method = 'POST';
+    init.headers = Object.assign({'X-Desk': '1'}, opts.headers || {});
+    if (opts.raw) init.body = body;
+    else { init.body = JSON.stringify(body); init.headers['Content-Type'] = 'application/json'; }
+  }
+  const r = await fetch(url, init);
+  let j = {};
+  try { j = await r.json(); } catch (e) { }
+  if (!r.ok) { const err = new Error(j.error || `Request failed (${r.status})`); err.status = r.status; throw err; }
+  return j;
+}
+const store = {
+  get: k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { } }
+};
+
+const RULES = ['amazon', 'sales', 'bsr', 'offers', 'roi', 'suppression', 'hazmat'];
+const NAMES = {amazon: 'Amazon on listing', sales: 'Monthly sales', bsr: 'Sales rank', offers: 'Offer count',
+  roi: 'ROI', suppression: 'Buy Box suppression', hazmat: 'HAZMAT'};
+const FIELDS = [['asin', 'ASIN column'], ['code', 'Barcode column (UPC/EAN)'], ['cost', 'Cost column'],
+  ['title', 'Product name'], ['pack', 'Units per case']];
+const STATE = {running: 'Running', paused: 'Paused', done: 'Finished', cancelled: 'Stopped', error: 'Failed', interrupted: 'Interrupted'};
+const NOTE = {done: 'Finished. The report is ready to download.', cancelled: 'Stopped. A report of the finished rows is available.',
+  interrupted: 'The app was closed during this run, so no final report was saved. Results so far are shown.'};
+
+const BASE_TITLE = document.title;
+let beepCtx = null;
+function askNotify() {
+  try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+  try { beepCtx = beepCtx || new (window.AudioContext || window.webkitAudioContext)(); beepCtx.resume(); } catch (e) {}
+}
+function finishAlert(name, ok) {
+  try {
+    if (beepCtx) {
+      const o = beepCtx.createOscillator(), g = beepCtx.createGain();
+      o.frequency.value = ok ? 880 : 330; g.gain.value = 0.08;
+      o.connect(g); g.connect(beepCtx.destination); o.start(); o.stop(beepCtx.currentTime + 0.25);
+    }
+  } catch (e) {}
+  try {
+    if ('Notification' in window && Notification.permission === 'granted' && document.hidden)
+      new Notification(ok ? 'Screening finished' : 'Screening stopped', {body: name});
+  } catch (e) {}
+}
+let token = 0;
+function route() {
+  document.title = BASE_TITLE;
+  token++;
+  main.onclick = main.onchange = main.oninput = null;
+  const [path, query] = location.hash.slice(1).split('?');
+  const parts = (path || '/').split('/').filter(Boolean);
+  const isNew = parts[0] === 'new';
+  $('#nav-new').classList.toggle('on', isNew);
+  $('#nav-runs').classList.toggle('on', !isNew);
+  window.scrollTo(0, 0);
+  if (isNew) return viewNew(new URLSearchParams(query || '').get('from'));
+  if (parts[0] === 'run' && parts[1]) return viewRun(parts[1]);
+  return viewRuns();
+}
+addEventListener('hashchange', route);
+
+function viewRuns() {
+  const my = token;
+  async function draw() {
+    let j;
+    try { j = await api('/api/runs'); }
+    catch (e) { if (my === token) main.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+    if (my !== token) return;
+    main.innerHTML = '<header class="head"><h1>Runs</h1><a class="btn" href="#/new">New screening</a></header>' +
+      (j.runs.length ? '<table class="list"><thead><tr><th>File</th><th>Market</th><th>State</th><th class="num">Passed</th><th class="num">Checked</th><th>Started</th><th></th></tr></thead><tbody>' +
+        j.runs.map(r => `<tr><td><a href="#/run/${esc(r.id)}"><b>${esc(r.name)}</b></a></td><td>${esc(r.domain)}</td>` +
+          `<td class="st ${esc(r.state)}">${esc(STATE[r.state] || r.state)}</td><td class="num">${num(r.passed)}</td><td class="num">${num(r.checked)}</td>` +
+          `<td>${esc(r.created)}</td><td class="acts">${r.report ? `<a href="/api/run/${esc(r.id)}/report">Report</a>` : ''}` +
+          `<a href="#/new?from=${esc(r.id)}">Run again</a>` +
+          `<button class="btn ghost small" data-del="${esc(r.id)}"${r.state === 'running' || r.state === 'paused' ? ' disabled' : ''}>Delete</button></td></tr>`).join('') +
+        '</tbody></table>'
+        : '<p class="empty">Nothing screened yet. <a href="#/new">Start with a supplier price list.</a></p>');
+    if (j.runs.some(r => r.state === 'running' || r.state === 'paused')) setTimeout(() => { if (my === token) draw(); }, 3000);
+  }
+  main.onclick = async e => {
+    const b = e.target.closest('[data-del]');
+    if (!b || !confirm('Delete this run and its results?')) return;
+    try { await api(`/api/run/${b.dataset.del}/delete`, {}); } catch (err) { alert(err.message); }
+    draw();
+  };
+  draw();
+}
+
+async function viewNew(fromId) {
+  const my = token;
+  let D, saved = null;
+  try {
+    D = await api('/api/defaults');
+    if (fromId) saved = (await api(`/api/run/${fromId}/meta`)).settings || null;
+    if (!saved) { try { saved = JSON.parse(store.get('lastSettings') || 'null'); } catch (e) { saved = null; } }
+  } catch (e) { if (my === token) main.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+  if (my !== token) return;
+  const S = Object.assign({}, D.rules, {buybox: true, two_pass: true, refresh: false, cache_only: false, auto_pack: false, limit: 0}, saved || {});
+  const checks = Object.assign({}, ...D.checks.map(c => ({[c]: true})), S.checks || {});
+  const pf = Object.assign({min_qty: '', min_cost: '', max_cost: '', exclude: '', qty_column: ''}, S.prefilter || {});
+  const sel = (v, x) => String(v) === String(x) ? ' selected' : '';
+  const chk = v => v ? ' checked' : '';
+  const rule = (k, html) => `<div class="rule"><input type="checkbox" name="check_${k}"${chk(checks[k])} aria-label="${esc(NAMES[k])}"><p>${html}</p></div>`;
+  const numIn = (n, extra = '') => `<input type="number" name="${n}" value="${esc(S[n])}" ${extra}>`;
+  main.innerHTML = `<form id="f" autocomplete="off">
+<header class="head sticky"><h1>New screening</h1><p id="msg" role="status"></p>
+<button type="button" class="btn ghost" id="back" hidden>Change settings</button>
+<button type="button" class="btn" id="go">Check and estimate</button></header>
+<div id="pre" class="pre" hidden></div>
+
+<section><h2>Supplier file</h2>
+<div class="row"><label class="btn ghost" for="file">Choose supplier file<input type="file" id="file" class="sr" accept=".csv,.txt,.xlsx,.xlsm,.xls"></label><span id="fname" class="muted">Nothing chosen</span></div>
+<input type="hidden" name="upload" id="upload">
+<div class="grid">
+<label>Excel sheet<select name="sheet" id="sheet" disabled></select></label>
+<label>Marketplace<select name="domain">${D.domains.map(d => `<option${sel(S.domain || 'GB', d)}>${d}</option>`).join('')}</select></label>
+<label class="wide">Keepa API key<span class="inline"><input type="password" name="api_key" id="key" autocomplete="off"><button type="button" class="btn ghost" id="tok">Check tokens</button></span></label>
+</div><p id="tokmsg" class="muted"></p></section>
+
+<section><h2>Columns</h2>
+<div class="grid" id="map">
+${FIELDS.map(([f, label]) => `<label>${label}<select name="map_${f}" data-f="${f}"><option value="">(none)</option></select></label>`).join('')}
+<label>Cost column is per<select name="cost_basis"><option>auto</option><option>unit</option><option>case</option></select></label>
+</div>
+<p id="layout" class="muted">Choose a file to see its columns. The mapping is remembered for any file with the same headers.</p>
+<div class="scroll"><table class="peek" id="peek"></table></div></section>
+
+<section><h2>Rules</h2><div>
+${rule('amazon', `Amazon in stock at most ${numIn('amazon_pct', 'min="0" max="100"')}% of the last 90 days`)}
+${rule('sales', `At least ${numIn('min_sales', 'min="0"')} sales a month`)}
+${rule('bsr', `Sales rank no worse than ${numIn('bsr_max', 'min="1"')} and steady, with variation at most ${numIn('bsr_cv', 'min="0" step="0.05"')}`)}
+${rule('offers', `Between ${numIn('min_offers', 'min="0"')} and ${numIn('max_offers', 'min="1"')} new offers`)}
+${rule('roi', `ROI at least ${numIn('min_roi')}%`)}
+${rule('suppression', `Buy Box suppressed at most ${numIn('max_suppressed', 'min="0" max="100"')}% of the last 90 days`)}
+${rule('hazmat', 'No HAZMAT products')}
+</div></section>
+
+<section><h2>Costs</h2><div class="grid">
+<label>Fallback referral fee, %${numIn('referral', 'step="0.5"')}</label>
+<label>Fallback FBA fee${numIn('fba', 'step="0.25"')}</label>
+<label>Prep cost per unit${numIn('prep', 'step="0.05"')}</label>
+<label>Inbound shipping per unit${numIn('inbound', 'step="0.05"')}</label>
+<label>VAT, %${numIn('vat')}</label>
+<label>Sell price used<select name="basis">
+<option value="conservative"${sel(S.basis, 'conservative')}>Lower of now and 90-day average</option>
+<option value="current"${sel(S.basis, 'current')}>Current price</option>
+<option value="avg90"${sel(S.basis, 'avg90')}>90-day average</option></select></label>
+</div></section>
+
+<section><h2>Skip before Keepa</h2><div>
+<p class="muted">Rows that match are never looked up, so they cost no tokens.</p>
+<div class="grid">
+<label>Minimum stock (QTY)<input type="number" name="min_qty" value="${esc(pf.min_qty)}" min="0"></label>
+<label>QTY column<select name="qty_column" id="qtycol"><option value="">(detect automatically)</option></select></label>
+<label>Minimum cost<input type="number" name="min_cost" value="${esc(pf.min_cost)}" min="0" step="0.01"></label>
+<label>Maximum cost<input type="number" name="max_cost" value="${esc(pf.max_cost)}" min="0" step="0.01"></label>
+<label class="wide">Skip names containing these words, comma separated (end with * for prefixes)<input type="text" name="exclude" value="${esc(pf.exclude)}"></label>
+</div></div></section>
+
+<section><h2>Options</h2><div>
+<label class="chk"><input type="checkbox" name="buybox"${chk(S.buybox)}>Use Buy Box data, for a more accurate price and Amazon check</label>
+<label class="chk"><input type="checkbox" name="two_pass"${chk(S.two_pass)}>Two passes: fetch Buy Box data only for products that survive the first pass</label>
+<label class="chk"><input type="checkbox" name="auto_pack"${chk(S.auto_pack)}>Multiply the cost by the listing's pack quantity when Keepa reports one</label>
+<label class="chk"><input type="checkbox" name="refresh"${chk(S.refresh)}>Ignore the 24-hour cache and ask Keepa again</label>
+<label class="chk"><input type="checkbox" name="cache_only"${chk(S.cache_only)}>Cache only: use saved lookups of any age, no Keepa calls, no tokens</label>
+<label class="chk">Only the first <input type="number" name="limit" value="${esc(S.limit)}" min="0"> rows (0 means all)</label>
+</div></section></form>`;
+
+  const f = $('#f'), E = f.elements;
+  const say = (t, bad) => { const m = $('#msg'); m.textContent = t; m.className = bad ? 'bad' : ''; };
+  const key = $('#key');
+  key.value = store.get('keepaKey');
+  key.onchange = () => store.set('keepaKey', key.value.trim());
+  f.querySelectorAll('.rule > input').forEach(c => {
+    const sync = () => c.closest('.rule').classList.toggle('off', !c.checked);
+    c.onchange = sync; sync();
+  });
+
+  function showInspect(j, keep) {
+    $('#upload').value = j.upload; $('#fname').textContent = j.name;
+    const s = $('#sheet');
+    s.innerHTML = j.sheets.map(x => `<option${x === j.sheet ? ' selected' : ''}>${esc(x)}</option>`).join('');
+    s.disabled = !j.sheets.length;
+    const wanted = f => (keep && keep.map && keep.map[f] != null && j.columns.includes(keep.map[f])) ? keep.map[f] : j.mapping[f];
+    f.querySelectorAll('#map [data-f]').forEach(sel => {
+      sel.innerHTML = '<option value="">(none)</option>' + j.columns.map(c =>
+        `<option${c === wanted(sel.dataset.f) ? ' selected' : ''}>${esc(c)}</option>`).join('');
+    });
+    const q = $('#qtycol'), qk = (keep && keep.prefilter && keep.prefilter.qty_column) || '';
+    q.innerHTML = '<option value="">(detect automatically)</option>' + j.columns.map(c => `<option${c === qk ? ' selected' : ''}>${esc(c)}</option>`).join('');
+    E.cost_basis.value = (keep && keep.cost_basis) || j.cost_basis;
+    $('#layout').textContent = `${j.rows.toLocaleString()} rows, header on row ${j.header}.` + (j.remembered ? ' Mapping remembered from an earlier run.' : '');
+    $('#peek').innerHTML = '<tr>' + j.columns.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>' +
+      j.preview.map(r => '<tr>' + r.map(c => `<td>${esc(c)}</td>`).join('') + '</tr>').join('');
+  }
+
+  $('#file').onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    say('Reading the file');
+    try {
+      const j = await api('/api/upload', file, {raw: true, headers: {'X-Filename': encodeURIComponent(file.name), 'Content-Type': 'application/octet-stream'}});
+      if (my !== token) return;
+      showInspect(j); say('');
+    } catch (err) { if (my === token) say(err.message, true); }
+    e.target.value = '';
+  };
+  $('#sheet').onchange = async () => {
+    try { showInspect(await api('/api/inspect', {upload: $('#upload').value, sheet: $('#sheet').value})); say(''); }
+    catch (err) { say(err.message, true); }
+  };
+  $('#tok').onclick = async () => {
+    try {
+      const j = await api('/api/tokens', {api_key: key.value});
+      $('#tokmsg').textContent = `${j.left == null ? '?' : j.left.toLocaleString()} tokens left, refilling ${j.rate} a minute`;
+    } catch (err) { $('#tokmsg').textContent = err.message; }
+  };
+
+  function remember(o) {
+    const keep = Object.assign({}, o);
+    ['upload', 'sheet', 'map', 'api_key', 'cost_basis', 'limit', 'cache_only', 'refresh'].forEach(k => delete keep[k]);
+    keep.prefilter = Object.assign({}, o.prefilter, {qty_column: ''});
+    store.set('lastSettings', JSON.stringify(keep));
+  }
+
+  function collect() {
+    const v = n => E[n].value, c = n => E[n].checked, map = {}, ck = {};
+    FIELDS.forEach(([x]) => map[x] = v('map_' + x));
+    D.checks.forEach(k => ck[k] = c('check_' + k));
+    const out = {upload: v('upload'), sheet: v('sheet'), domain: v('domain'), api_key: v('api_key').trim(), map, cost_basis: v('cost_basis'), checks: ck,
+      basis: v('basis'), buybox: c('buybox'), two_pass: c('two_pass'), auto_pack: c('auto_pack'), refresh: c('refresh'), cache_only: c('cache_only'), limit: v('limit'),
+      prefilter: {min_qty: v('min_qty'), min_cost: v('min_cost'), max_cost: v('max_cost'), exclude: v('exclude'), qty_column: v('qty_column')}};
+    ['amazon_pct', 'min_sales', 'bsr_max', 'bsr_cv', 'min_offers', 'max_offers', 'min_roi', 'max_suppressed', 'referral', 'fba', 'prep', 'inbound', 'vat'].forEach(n => out[n] = v(n));
+    return out;
+  }
+
+  const describe = j => {
+    let t = `${j.lookups.toLocaleString()} products to look up`;
+    if (j.cached) t += `, ${j.cached.toLocaleString()} already cached`;
+    if (j.filtered) t += `, ${j.filtered.toLocaleString()} skipped by your filters`;
+    if (j.no_id) t += `, ${j.no_id.toLocaleString()} rows have no usable ID`;
+    t += '. ';
+    if (j.cache_only) return t + 'Cache-only: no tokens will be used.';
+    t += `The first pass needs about ${j.tokens.toLocaleString()} tokens` + (j.cheap ? ', plus 3 for each product that survives it' : '') + '. ';
+    if (j.token_error) return t + `Token check failed: ${j.token_error}`;
+    if (j.left == null) return t;
+    return t + `You have ${j.left.toLocaleString()} and refill ${j.rate} a minute` +
+      (j.wait_min > 0 ? `, so expect ${wait(j.wait_min)} of waiting.` : ', which covers the first pass.');
+  };
+
+  const pre = $('#pre');
+  const showPre = j => {
+    const p = j.preflight || {facts: [], warnings: []};
+    const parts = [];
+    if (p.warnings.length) parts.push('<ul>' + p.warnings.map(w => `<li class="warn">${esc(w)}</li>`).join('') + '</ul>');
+    if (p.facts.length) parts.push('<h2>What I found in the file</h2><ul>' + p.facts.map(x => `<li><b>${x.n.toLocaleString()}</b> ${esc(x.text)}</li>`).join('') + '</ul>');
+    if (!parts.length) parts.push('<h2>Nothing odd found in the file or the settings.</h2>');
+    if (!j.cache_only && j.rate) parts.push(`<p class="eta">${j.wait_min > 0 ? 'Token wait: ' + wait(j.wait_min) + ' at ' + j.rate + ' tokens a minute.' : 'Your tokens cover the first pass, so there should be no waiting for tokens.'}</p>`);
+    pre.innerHTML = parts.join('');
+    pre.hidden = false;
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  };
+  let armed = false;
+  const go = $('#go'), back = $('#back');
+  const reset = () => { armed = false; go.textContent = 'Check and estimate'; back.hidden = true; pre.hidden = true; };
+  back.onclick = () => { reset(); say(''); };
+  f.addEventListener('input', e => { if (armed && e.target.id !== 'key') { reset(); say(''); } });
+  go.onclick = async () => {
+    go.disabled = true;
+    try {
+      if (!armed) {
+        const o = collect();
+        remember(o);
+        const j = await api('/api/estimate', o);
+        if (my !== token) return;
+        armed = true; go.textContent = 'Start'; back.hidden = false; say(describe(j)); showPre(j);
+      } else {
+        askNotify();
+        const o = collect();
+        remember(o);
+        const j = await api('/api/start', o);
+        location.hash = '#/run/' + j.id;
+      }
+    } catch (err) { if (my === token) { reset(); say(err.message, true); } }
+    finally { go.disabled = false; }
+  };
+
+  if (saved && saved.upload) {
+    try { showInspect(await api('/api/inspect', {upload: saved.upload, sheet: saved.sheet || null}), saved); }
+    catch (err) { say('The original file is gone. Choose it again to re-run with these settings.', true); }
+  }
+}
+
+async function viewRun(rid) {
+  const my = token;
+  let meta;
+  try { meta = await api(`/api/run/${rid}/meta`); }
+  catch (e) { if (my === token) main.innerHTML = `<p class="empty">${esc(e.message)} <a href="#/">Back to runs</a></p>`; return; }
+  if (my !== token) return;
+  const COLS = [['unit_cost', 'Cost', 2], ['sell_price', 'Sell', 2], ['roi_pct', 'ROI %', 1], ['monthly_sales', 'Sales a month', 0],
+    ['bsr_now', 'Rank', 0], ['new_offers', 'Offers', 0], ['buybox_suppressed_pct_90d', 'Suppressed %', 1], ['est_monthly_profit', 'Est. profit a month', 0]];
+  main.innerHTML = `<header class="head"><div><h1>${esc(meta.name)} <span id="state" class="st"></span></h1>
+<p class="muted">Marketplace ${esc(meta.domain)}, started ${esc(meta.created)}</p></div>
+<div><button class="btn warnbtn" id="pause" hidden title="Pause after the current product (shortcut: P)">Pause</button> <button class="btn ghost" id="stop" hidden>Stop</button> <a class="btn ghost" href="#/new?from=${esc(rid)}">Run again</a>
+<a class="btn" id="dl" href="/api/run/${esc(rid)}/report" hidden>Download report</a></div></header>
+<div class="meter"><div id="bar"></div></div>
+<p class="pace"><span id="prog"></span><span id="eta"></span></p>
+<p class="legend" id="liveline" hidden><span class="live" id="livedot"><i></i><span id="livetext">Live</span></span><span>Newest results appear at the top while the run is going. Click a column to sort.</span></p>
+<nav class="tabs" id="tabs"></nav>
+<p class="legend"><span class="code"><i class="p"></i><i class="f"></i><i class="n"></i></span>Passed, failed, not checked. One bar per rule: Amazon, sales, rank, offers, ROI, Buy Box, HAZMAT.</p>
+<div class="why" id="why" hidden></div>
+<div class="scroll"><table class="res" id="res"><thead></thead><tbody id="rows"></tbody></table></div>
+<p><button class="btn ghost" id="more" hidden>Show more</button></p>
+<details><summary>Activity log</summary><pre id="log"></pre></details>`;
+
+  const WHY = {amazon: 'Amazon in stock', sales: 'Sales too low', bsr: 'Rank too poor or unstable', offers: 'Offer count out of range',
+    roi: 'ROI too low', suppression: 'Buy Box suppressed', hazmat: 'HAZMAT'};
+  const samples = []; let sampleLabel = '';
+  const rows = []; let pos = 0, view = 'all', sortKey = null, desc = true, shown = 300, prev = null, live = false, seen = 0, lastLog = '', loaded = false;
+  const group = r => r.status === 'PASS' ? 'pass' : r.status === 'FAIL' ? 'fail' : 'other';
+  const code = r => '<span class="code">' + RULES.map(k => {
+    const v = r['pass_' + k];
+    return `<i class="${v === true ? 'p' : v === false ? 'f' : 'n'}" title="${NAMES[k]}"></i>`;
+  }).join('') + '</span>';
+  $('#res thead').innerHTML = '<tr><th>Rules</th><th>Product</th>' + COLS.map(([k, t]) => `<th class="num" data-k="${k}">${t}</th>`).join('') + '</tr>';
+
+  function tr(r) {
+    const g = group(r), title = esc(r.title || r.supplier_title || '');
+    const id = r.asin ? `<a href="${esc(r.amazon_link)}" target="_blank" rel="noopener">${esc(r.asin)}</a>` : esc(r.supplier_code || '');
+    const note = g === 'pass'
+      ? [r.pack_warning ? `Check pack: ${r.pack_warning}` : '', r.fees_estimated ? `Fees estimated: ${r.fees_estimated}` : ''].filter(Boolean).map(esc).join('. ')
+      : esc(r.fail_reasons || '');
+    return `<tr class="${g}"><td>${code(r)}</td><td class="prod"><span class="id">${id}</span>${title}` +
+      `<small class="${g === 'pass' ? 'warn' : 'why'}">${note}</small></td>` +
+      COLS.map(([k, , d]) => `<td class="num">${num(r[k], d)}</td>`).join('') + '</tr>';
+  }
+  function render() {
+    const ruleView = view.startsWith('rule:') ? view.slice(5) : null;
+    const list = rows.filter(r => ruleView ? r['pass_' + ruleView] === false : (view === 'all' || group(r) === view));
+    if (!sortKey && live) list.reverse();
+    if (sortKey) list.sort((a, b) => {
+      const x = a[sortKey], y = b[sortKey];
+      if (x == null || y == null) return (x == null) - (y == null);
+      return desc ? y - x : x - y;
+    });
+    $('#rows').innerHTML = list.slice(0, shown).map(r => loaded && live && r._n >= seen ? tr(r).replace('<tr class="', '<tr class="fresh ') : tr(r)).join('');
+    seen = rows.length;
+    $('#more').hidden = list.length <= shown;
+    const c = {all: rows.length, pass: 0, fail: 0, other: 0};
+    rows.forEach(r => c[group(r)]++);
+    const failed = rows.filter(r => r.status === 'FAIL');
+    const why = RULES.map(k => [k, failed.filter(r => r['pass_' + k] === false).length]).filter(x => x[1]).sort((a, b) => b[1] - a[1]);
+    const box = $('#why');
+    box.hidden = !why.length;
+    box.innerHTML = why.length ? `<h2>Why products failed, ${failed.length.toLocaleString()} so far. A product can fail several rules.${ruleView ? ' <button class="clear" data-clear="1">Show all</button>' : ''}</h2>` +
+      why.map(([k, n]) => `<button class="line${ruleView === k ? ' on' : ''}" data-r="${k}"><span>${WHY[k]}</span><span class="track"><i style="width:${n / failed.length * 100}%"></i></span><span class="n">${n.toLocaleString()}, ${Math.round(n / failed.length * 100)}%</span></button>`).join('') : '';
+    $('#tabs').innerHTML = [['all', 'All'], ['pass', 'Passed'], ['fail', 'Failed'], ['other', 'Not found or skipped']]
+      .map(([k, n]) => `<button data-v="${k}" class="${k === view ? 'on' : ''}">${n}<b>${c[k].toLocaleString()}</b></button>`).join('');
+  }
+  $('#why').onclick = e => {
+    if (e.target.closest('[data-clear]')) { view = 'all'; shown = 300; return render(); }
+    const b = e.target.closest('button[data-r]');
+    if (b) { view = view === 'rule:' + b.dataset.r ? 'all' : 'rule:' + b.dataset.r; shown = 300; render(); }
+  };
+  $('#tabs').onclick = e => { const b = e.target.closest('button'); if (b) { view = b.dataset.v; shown = 300; render(); } };
+  $('#res thead').onclick = e => { const k = e.target.dataset.k; if (k) { desc = sortKey === k ? !desc : true; sortKey = k; render(); } };
+  $('#more').onclick = () => { shown += 400; render(); };
+  $('#stop').onclick = e => {
+    if (!confirm('Stop this run? The results so far are kept and you can download them. Use Pause if you want to carry on later.')) return;
+    e.target.disabled = true; e.target.textContent = 'Stopping';
+    $('#pause').disabled = true;
+    api(`/api/run/${rid}/cancel`, {}).catch(() => {});
+  };
+  let paused = false, busy = false;
+  const pauseBtn = $('#pause');
+  const showPause = p => {
+    paused = p;
+    pauseBtn.textContent = p ? 'Resume' : 'Pause';
+    pauseBtn.className = p ? 'btn' : 'btn warnbtn';
+    pauseBtn.title = p ? 'Carry on from where it stopped (shortcut: P)' : 'Pause after the current product (shortcut: P)';
+  };
+  async function togglePause() {
+    if (busy || pauseBtn.hidden || pauseBtn.disabled) return;
+    busy = true; pauseBtn.disabled = true;
+    const want = !paused;
+    try { await api(`/api/run/${rid}/${want ? 'pause' : 'resume'}`, {}); showPause(want); samples.length = 0; }
+    catch (err) { alert(err.message); }
+    finally { busy = false; pauseBtn.disabled = false; }
+  }
+  pauseBtn.onclick = togglePause;
+  const onKey = e => {
+    if (my !== token) return removeEventListener('keydown', onKey);
+    if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) togglePause();
+  };
+  addEventListener('keydown', onKey);
+
+  async function tick() {
+    let j;
+    try { j = await api(`/api/run/${rid}/feed?pos=${pos}`); }
+    catch (e) {
+      if (my !== token) return;
+      if (e.status === 404) { $('#prog').textContent = 'This run no longer exists.'; return; }
+      $('#prog').textContent = 'Lost contact with the app. Retrying.';
+      return setTimeout(tick, 4000);
+    }
+    if (my !== token) return;
+    pos = j.pos; for (const r of j.rows) { r._n = rows.length; rows.push(r); }
+    const running = j.state === 'running';
+    live = running;
+    if (!running && !sortKey) sortKey = 'est_monthly_profit';
+    if (!busy) showPause(running && j.paused);
+    pauseBtn.hidden = !running;
+    $('#liveline').hidden = !running;
+    $('#livedot').classList.toggle('paused', paused);
+    $('#livetext').textContent = paused ? 'Paused' : j.wait_reason === 'tokens' ? 'Waiting for tokens' : 'Live';
+    $('#bar').style.width = (running ? (j.total ? j.done / j.total * 100 : 0) : 100) + '%';
+    const shownState = running && paused ? 'paused' : j.state;
+    $('#state').textContent = STATE[shownState] || shownState;
+    $('#state').className = 'st ' + shownState;
+    $('#stop').hidden = !running;
+    $('#dl').hidden = !j.report && !j.partial;
+    $('#dl').textContent = j.report ? 'Download report' : 'Download report so far';
+    $('#prog').textContent = running ? (paused ? `Paused at ${num(j.done)} of ${num(j.total)}. Press Resume to carry on.` : j.total ? `${j.label}: ${num(j.done)} of ${num(j.total)}` : 'Starting')
+      : j.state === 'error' ? j.error : NOTE[j.state] || '';
+    const logText = j.log.join('\n');
+    if (logText !== lastLog) { $('#log').textContent = logText; lastLog = logText; }
+    let left = '';
+    if (running && !paused && j.total > 0) {
+      if (j.label !== sampleLabel) { samples.length = 0; sampleLabel = j.label; }
+      const now = Date.now();
+      samples.push({t: now, done: j.done});
+      while (samples.length > 2 && now - samples[0].t > 600000) samples.shift();
+      const a = samples[0], b = samples[samples.length - 1];
+      if (b.t - a.t >= 30000 && b.done > a.done) {
+        const minutes = (j.total - j.done) / ((b.done - a.done) / ((b.t - a.t) / 60000));
+        left = wait(minutes) + ' left in this pass';
+      }
+    }
+    $('#eta').textContent = running ? [left, j.tokens_left != null ? `${num(j.tokens_left)} tokens left` : '',
+      j.wait_reason === 'tokens' ? `out of tokens, next try in ${j.wait_left != null ? j.wait_left + 's' : 'a moment'}` :
+      j.wait_reason === 'network' ? `connection problem, retrying in ${j.wait_left != null ? j.wait_left + 's' : 'a moment'}` : ''].filter(Boolean).join(', ') : '';
+    if (running) document.title = `${paused ? 'Paused' : 'Running'} ${j.total ? Math.floor(j.done / j.total * 100) : 0}% - ${meta.name}`;
+    else document.title = (STATE[j.state] || j.state) + ' - ' + meta.name;
+    if (prev === 'running' && !running) finishAlert(meta.name, j.state === 'done');
+    if (j.rows.length || j.state !== prev) render();
+    prev = j.state;
+    if (j.rows.length < 500) loaded = true;
+    if (j.rows.length >= 500 || (!running && j.rows.length)) return tick();
+    if (running) setTimeout(tick, document.hidden ? 3000 : 1000);
+  }
+  tick();
+}
+
+route();
+</script></body></html>
